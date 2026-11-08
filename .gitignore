@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Node
+node_modules/
+frontend/dist/
+frontend/node_modules/
+
+# Environment & secrets
+.env
+*.env
+backend/.env
+
+# Local data
+*.db
+cafemind.db
+
+# Google Cloud SDK (local install)
+google-cloud-sdk/
+.gcloud_config/
+gcloud.zip
+
+# OS / editor
+.DS_Store
+*.log

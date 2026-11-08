@@ -1,0 +1,54 @@
+steps:
+  # 1. Build Docker image using Cloud Build
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'asia-south1-docker.pkg.dev/$PROJECT_ID/cafemind-repo/cafemind:$COMMIT_SHA'
+      - '-t'
+      - 'asia-south1-docker.pkg.dev/$PROJECT_ID/cafemind-repo/cafemind:latest'
+      - '.'
+
+  # 2. Push image to Google Artifact Registry (asia-south1)
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'asia-south1-docker.pkg.dev/$PROJECT_ID/cafemind-repo/cafemind:$COMMIT_SHA'
+
+  # 3. Deploy to Google Cloud Run (attached to Cloud SQL via Unix socket)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'cafemind'
+      - '--image'
+      - 'asia-south1-docker.pkg.dev/$PROJECT_ID/cafemind-repo/cafemind:$COMMIT_SHA'
+      - '--region'
+      - 'asia-south1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--memory'
+      - '1Gi'
+      - '--cpu'
+      - '1'
+      - '--min-instances'
+      - '0'
+      - '--max-instances'
+      - '3'
+      - '--port'
+      - '8080'
+      - '--add-cloudsql-instances'
+      - '$PROJECT_ID:asia-south1:cafemind-db'
+      - '--set-env-vars'
+      - 'ENVIRONMENT=production,CLOUD_SQL_CONNECTION_NAME=$PROJECT_ID:asia-south1:cafemind-db,DB_USER=cafemind_user,DB_NAME=cafemind'
+      - '--set-secrets'
+      - 'DB_PASSWORD=cafemind-db-password:latest,GEMINI_API_KEY=cafemind-gemini-key:latest'
+
+images:
+  - 'asia-south1-docker.pkg.dev/$PROJECT_ID/cafemind-repo/cafemind:$COMMIT_SHA'
+  - 'asia-south1-docker.pkg.dev/$PROJECT_ID/cafemind-repo/cafemind:latest'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
